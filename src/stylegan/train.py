@@ -14,7 +14,7 @@ from chainer import Variable
 from chainer import training
 from chainer.training import extension
 from chainer.training import extensions
-import cupy
+
 try:
     import chainermn
     from mpi4py import MPI
@@ -354,7 +354,7 @@ def main():
 
     # Run the training
     if FLAGS.enable_cuda_profiling:
-        with cupy.cuda.profile():
+        with chainer.backends.cuda.cupy.cuda.profile():
             trainer.run()
     else:
         #with chainer.using_config('debug', True):
