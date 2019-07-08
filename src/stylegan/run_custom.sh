@@ -21,14 +21,14 @@ if [ $EXPR_ID -eq 1 ]; then
     runner="$runner_prefix "
     hps_device="--gpu 0"
     mpi="--use_mpi=False"
-    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32 --max_stage 7 --stage_interval 1250000"
-    eval_iter="--evaluation_sample_interval 500 --display_interval 10 --snapshot_interval 5000"
+    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32 --max_stage 7 --stage_interval 125000"
+    eval_iter="--evaluation_sample_interval 500 --display_interval 100 --snapshot_interval 5000"
 elif [ $EXPR_ID -eq -1 ]; then
     runner="$runner_prefix "
     hps_device="--gpu -1"
     mpi="--use_mpi=False"
-    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32 --max_stage 7 --stage_interval 1250000"
-    eval_iter="--evaluation_sample_interval 500 --display_interval 10 --snapshot_interval 5000"
+    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32 --max_stage 7 --stage_interval 125000"
+    eval_iter="--evaluation_sample_interval 500 --display_interval 100 --snapshot_interval 5000"
 elif [ $EXPR_ID -eq 2 ]; then
     nb_gpu="8"
     runner="$runner_prefix mpiexec -n $nb_gpu"
@@ -42,7 +42,7 @@ hps_training_dynamics="$eval_iter $mpi $run_iter"
 hps_lr="--adam_alpha_g 0.001 --adam_alpha_d 0.001 --adam_beta1 0.0 --adam_beta2 0.999"
 hps_hyperparameters="--lambda_gp 5.0 --smoothing 0.999 --keep_smoothed_gen=True"
 hps_dataset="--image_dir $DATASET_DIR --dataset_worker_num 8"
-hps_output="--out $SCRATCH_ROOT/$SUBPROJ_NAME/$EXPR_ID"
+hps_output="--out $3/$EXPR_ID"
 hps_resume="--auto_resume"
 
 $runner $python_version $RUN_SCRIPT \

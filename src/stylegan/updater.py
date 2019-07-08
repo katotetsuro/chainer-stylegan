@@ -98,7 +98,8 @@ class StageManager(object):
                 current_dataset = self._datasets[old_key]
                 if isinstance(current_dataset, SubDataset):
                     current_dataset = current_dataset._dataset  #pylint:disable=protected-access
-                current_dataset.close()
+                if hasattr(current_dataset, 'close'):
+                    current_dataset.close()
                 del self._iterators[old_key]
                 del self._datasets[old_key]
 

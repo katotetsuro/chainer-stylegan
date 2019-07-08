@@ -281,7 +281,7 @@ def main():
             trigger=(FLAGS.snapshot_interval, 'iteration'))
 
         trainer.extend(
-            extensions.ProgressBar(training_length=(updater.total_iteration, 'iteration'), update_interval=1))
+            extensions.ProgressBar(training_length=(updater.total_iteration, 'iteration'), update_interval=FLAGS.display_interval))
 
         trainer.extend(
             sample_generate_light(generator, mapping, FLAGS.out, rows=8, cols=8),
@@ -394,6 +394,8 @@ import pdb, traceback, sys, code
 if __name__ == '__main__':
     try:
         main()
+    except KeyboardInterrupt:
+        pass
     except: 
         type, value, tb = sys.exc_info()
         traceback.print_exc()
