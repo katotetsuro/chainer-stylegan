@@ -192,7 +192,9 @@ class RunningHelper(object):
                 self.size = size
 
             def __call__(self, x):
-                return chainercv.transforms.resize(x, (self.size, self.size))
+                x = chainercv.transforms.resize(x, (self.size, self.size))
+                x = x / 127.5 - 1
+                return x
 
         if self.is_master:
             size = 4 * (2 ** ((stage_int + 1) // 2))
