@@ -39,6 +39,7 @@ gflags.DEFINE_integer(
     'dataset_worker_num', 12,
     'Number of threads in dataset loader'
 )
+gflags.DEFINE_string('image_dir', '', 'Image directory containing training data')
 
 gflags.DEFINE_integer('snapshot_interval', 5000, 'Interval of snapshot')
 gflags.DEFINE_integer('evaluation_sample_interval', 500, 'Interval of evaluation sampling')

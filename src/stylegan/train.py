@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import json
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -14,6 +15,7 @@ from chainer import Variable
 from chainer import training
 from chainer.training import extension
 from chainer.training import extensions
+import chainercv
 
 try:
     import chainermn
@@ -183,6 +185,29 @@ class RunningHelper(object):
             _dataset = chainermn.scatter_dataset(_dataset, self.comm)
 
         return _dataset
+    
+    def make_image_dataset(self, stage_int, image_dir):
+        class Transform():
+            def __init__(self, size):
+                self.size = size
+
+            def __call__(self, x):
+                return chainercv.transforms.resize(x, (self.size, self.size))
+
+        if self.is_master:
+            size = 4 * (2 ** ((stage_int + 1) // 2))
+            images = list(Path(image_dir).glob('*.jpg'))
+            _dataset = chainer.datasets.ImageDataset(images, dtype=np.float32)
+            _dataset = chainer.datasets.TransformDataset(_dataset, Transform(size))
+            self.print_log('Add (master) dataset for size {}'.format(size))
+        else:
+            _dataset = None
+            self.print_log('Add (slave) dataset')
+
+        if self.use_mpi:
+            _dataset = chainermn.scatter_dataset(_dataset, self.comm)
+
+        return _dataset
 
 
 def main():
@@ -219,7 +244,7 @@ def main():
     stage_manager = StageManager(
         stage_interval=running_helper.stage_interval,
         dynamic_batch_size=running_helper.dynamic_batch_size,
-        make_dataset_func=running_helper.make_dataset,
+        make_dataset_func=running_helper.make_dataset if not FLAGS.image_dir else lambda s: running_helper.make_image_dataset(s, FLAGS.image_dir),
         make_iterator_func=make_iterator_func,
         debug_start_instance=FLAGS.debug_start_instance)
     
