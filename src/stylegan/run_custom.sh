@@ -21,7 +21,7 @@ if [ $EXPR_ID -eq 1 ]; then
     runner="$runner_prefix "
     hps_device="--gpu 0"
     mpi="--use_mpi=False"
-    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32,32 --max_stage 9 --stage_interval 20000"
+    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32,32 --max_stage 9 --stage_interval 45000"
     eval_iter="--evaluation_sample_interval 500 --display_interval 100 --snapshot_interval 500"
 elif [ $EXPR_ID -eq -1 ]; then
     runner="$runner_prefix "
