@@ -6,9 +6,9 @@ from chainer import cuda, optimizers, serializers, Variable
 import json
 import h5py
 from PIL import Image
-from .dataset_augmentor import DatasetAugmentor
+# from .dataset_augmentor import DatasetAugmentor
 from chainer.dataset import dataset_mixin
-import Augmentor.ImageUtilities 
+# import Augmentor.ImageUtilities 
 
 class BaseDataset(dataset_mixin.DatasetMixin):
     def __init__(self, datasetConfig, prefix=None, _additional_augmentor_obj=None, return_meta=False, **kwargs):
