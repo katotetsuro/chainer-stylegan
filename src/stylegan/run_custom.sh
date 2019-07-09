@@ -21,14 +21,14 @@ if [ $EXPR_ID -eq 1 ]; then
     runner="$runner_prefix "
     hps_device="--gpu 0"
     mpi="--use_mpi=False"
-    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32 --max_stage 7 --stage_interval 62500"
-    eval_iter="--evaluation_sample_interval 500 --display_interval 100 --snapshot_interval 5000"
+    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32,32 --max_stage 9 --stage_interval 20000"
+    eval_iter="--evaluation_sample_interval 500 --display_interval 100 --snapshot_interval 500"
 elif [ $EXPR_ID -eq -1 ]; then
     runner="$runner_prefix "
     hps_device="--gpu -1"
     mpi="--use_mpi=False"
-    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32 --max_stage 7 --stage_interval 62500"
-    eval_iter="--evaluation_sample_interval 500 --display_interval 100 --snapshot_interval 5000"
+    run_iter="--dynamic_batch_size 256,256,256,128,128,64,64,32,32 --max_stage 9 --stage_interval 62500"
+    eval_iter="--evaluation_sample_interval 500 --display_interval 100 --snapshot_interval 500"
 elif [ $EXPR_ID -eq 2 ]; then
     nb_gpu="8"
     runner="$runner_prefix mpiexec -n $nb_gpu"
