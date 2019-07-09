@@ -10,17 +10,17 @@ from chainer.datasets import SubDataset
 import chainer.functions as F
 from chainer import Variable
 import numpy as np
-from config import get_lr_scale_factor
+from .config import get_lr_scale_factor
 
 import chainer.computational_graph as c
 
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.path.sep + os.path.pardir)
+# sys.path.append(os.path.dirname(__file__))
+# sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.path.sep + os.path.pardir)
 
-from common.loss_functions import loss_func_dcgan_dis, loss_func_dcgan_gen, loss_l2
-from common.utils.copy_param import soft_copy_param
-from common.utils.pggan import downsize_real
-from common.utils.save_images import convert_batch_images
+from src.common.loss_functions import loss_func_dcgan_dis, loss_func_dcgan_gen, loss_l2
+from src.common.utils.copy_param import soft_copy_param
+from src.common.utils.pggan import downsize_real
+from src.common.utils.save_images import convert_batch_images
 
 class StageManager(object):
 

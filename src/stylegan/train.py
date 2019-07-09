@@ -27,15 +27,15 @@ except:  #pylint:disable=bare-except
     mpi_available = False
 
 # from dataset import HDF5Dataset
-from updater import StageManager, Updater
-from net import Discriminator, StyleGenerator, MappingNetwork 
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.path.sep + os.path.pardir)
+from .updater import StageManager, Updater
+from .net import Discriminator, StyleGenerator, MappingNetwork 
+# sys.path.append(os.path.dirname(__file__))
+# sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.path.sep + os.path.pardir)
 
 import common
 from common.utils.record import record_setting
 from common.datasets.base.base_dataset import BaseDataset
-from config import FLAGS
+from .config import FLAGS
 from common.utils.save_images import convert_batch_images
 from common.evaluation.fid import API as FIDAPI, fid_extension
 
@@ -118,10 +118,6 @@ class RunningHelper(object):
         self.fleet_size, self.comm, self.device = fleet_size, comm, device
 
         self.is_master = is_master = not self.use_mpi or (self.use_mpi and comm.rank == 0)
-
-        # Early works
-        if is_master:
-            record_setting(FLAGS.out)
 
         # Show effective hps
         effective_hps = {
@@ -214,7 +210,7 @@ class RunningHelper(object):
 
 def main():
     FLAGS(sys.argv)
-
+    print(FLAGS.stage_interval)
     running_helper = RunningHelper(FLAGS.use_mpi)
     global mpi_is_master
     mpi_is_master = running_helper.is_master 

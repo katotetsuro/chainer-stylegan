@@ -8,13 +8,13 @@ gflags.DEFINE_float('adam_alpha_g', 0.001, 'alpha in Adam optimizer')
 gflags.DEFINE_float('adam_alpha_d', 0.001, 'alpha in Adam optimizer')
 gflags.DEFINE_float('adam_beta1', 0.0, 'beta1 in Adam optimizer')
 gflags.DEFINE_float('adam_beta2', 0.999, 'beta2 in Adam optimizer')
-gflags.DEFINE_float('lambda_gp', 1.0, 'Lambda GP')
+gflags.DEFINE_float('lambda_gp', 5.0, 'Lambda GP')
 gflags.DEFINE_float('smoothing', 0.999, '')
-gflags.DEFINE_boolean('keep_smoothed_gen', False, 'Whether to keep a smoothed version of generator.')
-gflags.DEFINE_string('dynamic_batch_size', '16,16,16,16,16,16,16,16,16,8,8,4,4,2,2,1,1',
+gflags.DEFINE_boolean('keep_smoothed_gen', True, 'Whether to keep a smoothed version of generator.')
+gflags.DEFINE_string('dynamic_batch_size', '1256,256,256,128,128,64,64,32,32',
                      'comma-split list of dynamic batch size w.p.t. stage')
 gflags.DEFINE_integer('stage_interval', 600000, '')
-gflags.DEFINE_integer('max_stage', 13, 'Size of image.')
+gflags.DEFINE_integer('max_stage', 9, 'Size of image.')
 
 
 gflags.DEFINE_boolean('auto_resume', False, 'Whether to automatically resume')
@@ -36,12 +36,12 @@ gflags.DEFINE_string('out', 'result', 'Directory to output the result')
 gflags.DEFINE_string('auto_resume_dir', '', 'Directory for loading the saved models')
 gflags.DEFINE_string('dataset_config', '', 'Dataset config json')
 gflags.DEFINE_integer(
-    'dataset_worker_num', 12,
+    'dataset_worker_num', 4,
     'Number of threads in dataset loader'
 )
 gflags.DEFINE_string('image_dir', '', 'Image directory containing training data')
 
-gflags.DEFINE_integer('snapshot_interval', 5000, 'Interval of snapshot')
+gflags.DEFINE_integer('snapshot_interval', 1000, 'Interval of snapshot')
 gflags.DEFINE_integer('evaluation_sample_interval', 500, 'Interval of evaluation sampling')
 gflags.DEFINE_integer('display_interval', 100, 'Interval of displaying log to console')
 gflags.DEFINE_string('get_model_from_interation', '', 'Load this iteration (it is a string)')

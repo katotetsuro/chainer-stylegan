@@ -166,10 +166,10 @@ class StyleGenerator(chainer.Chain):
                 SynthesisBlock(ch, ch, upsample=True, enable_blur=enable_blur), #16
                 SynthesisBlock(ch, ch, upsample=True, enable_blur=enable_blur), # 32
                 SynthesisBlock(ch // 2, ch, upsample=True, enable_blur=enable_blur), #64
-                SynthesisBlock(ch // 4, ch // 2, upsample=True, enable_blur=enable_blur), #128
-                SynthesisBlock(ch // 8, ch // 4, upsample=True, enable_blur=enable_blur), #256
-                SynthesisBlock(ch // 16, ch // 8, upsample=True, enable_blur=enable_blur), #512
-                SynthesisBlock(ch // 32, ch // 16, upsample=True, enable_blur=enable_blur) #1024
+                # SynthesisBlock(ch // 4, ch // 2, upsample=True, enable_blur=enable_blur), #128
+                # SynthesisBlock(ch // 8, ch // 4, upsample=True, enable_blur=enable_blur), #256
+                # SynthesisBlock(ch // 16, ch // 8, upsample=True, enable_blur=enable_blur), #512
+                # SynthesisBlock(ch // 32, ch // 16, upsample=True, enable_blur=enable_blur) #1024
             )
             self.outs = chainer.ChainList(
                 EqualizedConv2d(ch, 3, 1, 1, 0, gain=1),
@@ -177,10 +177,10 @@ class StyleGenerator(chainer.Chain):
                 EqualizedConv2d(ch, 3, 1, 1, 0, gain=1),
                 EqualizedConv2d(ch, 3, 1, 1, 0, gain=1),
                 EqualizedConv2d(ch // 2, 3, 1, 1, 0, gain=1),
-                EqualizedConv2d(ch // 4, 3, 1, 1, 0, gain=1),
-                EqualizedConv2d(ch // 8, 3, 1, 1, 0, gain=1),
-                EqualizedConv2d(ch // 16, 3, 1, 1, 0, gain=1),
-                EqualizedConv2d(ch // 32, 3, 1, 1, 0, gain=1)
+                # EqualizedConv2d(ch // 4, 3, 1, 1, 0, gain=1),
+                # EqualizedConv2d(ch // 8, 3, 1, 1, 0, gain=1),
+                # EqualizedConv2d(ch // 16, 3, 1, 1, 0, gain=1),
+                # EqualizedConv2d(ch // 32, 3, 1, 1, 0, gain=1)
             )
 
         self.n_blocks = len(self.blocks)
