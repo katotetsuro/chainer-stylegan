@@ -11,14 +11,14 @@ file_data: Dict = {file_data}
 
 for path, encoded in file_data.items():
     print(path)
-    path = Path(path)
-    path.parent.mkdir(exist_ok=True)
+    path = Path('/home').joinpath(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(gzip.decompress(base64.b64decode(encoded)))
 
 
 def run(command):
-    os.system('export PYTHONPATH=${PYTHONPATH}:/kaggle/working && ' + command)
+    os.system('export PYTHONPATH=${PYTHONPATH}:/home && ' + command)
 
 
-run('python setup.py develop --install-dir /kaggle/working')
-run('python -m src.stylegan.tran.py --gpu 0 --image_dir /kaggle/input/all-dogs/all-dogs --out result')
+run('cd /home && python setup.py develop --install-dir /home')
+run('python -m src.stylegan.train --gpu 0 --image_dir /kaggle/input/all-dogs/all-dogs --out result --stage_interval 40000')

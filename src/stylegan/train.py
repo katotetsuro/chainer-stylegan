@@ -209,8 +209,7 @@ class RunningHelper(object):
 
 
 def main():
-    FLAGS(sys.argv)
-    print(FLAGS.stage_interval)
+    print(FLAGS)
     running_helper = RunningHelper(FLAGS.use_mpi)
     global mpi_is_master
     mpi_is_master = running_helper.is_master 
