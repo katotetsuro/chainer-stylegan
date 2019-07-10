@@ -38,6 +38,7 @@ from common.datasets.base.base_dataset import BaseDataset
 from .config import FLAGS
 from common.utils.save_images import convert_batch_images
 from common.evaluation.fid import API as FIDAPI, fid_extension
+from .submit import create_submit_data
 
 def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, subdir='preview'):
     @chainer.training.make_extension()
@@ -385,6 +386,7 @@ def main():
     for model, model_name in zip(models, model_names):
         chainer.serializers.save_npz(FLAGS.out + '/' + model_name + '_latest.npz', model)
 
+    create_submit_data(models[0], models[1])
 
 import pdb, traceback, sys, code 
 
