@@ -80,7 +80,7 @@ def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, sub
     return make_image
 
 def make_iterator_func(dataset, batch_size):
-    return chainer.iterators.MultithreadIterator(dataset, batch_size=batch_size,  repeat=True, shuffle=None, n_threads=FLAGS.dataset_worker_num)
+    return chainer.iterators.MultithreadIterator(dataset, batch_size=batch_size,  repeat=True, shuffle=True, n_threads=FLAGS.dataset_worker_num)
 
 
 def batch_generate_func(gen, mapping, trainer):
