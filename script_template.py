@@ -21,4 +21,4 @@ def run(command):
 
 
 run('cd /home && python setup.py develop --install-dir /home')
-run('python -m src.stylegan.train --gpu 0 --image_dir /kaggle/input/all-dogs/all-dogs --out result --stage_interval 40000')
+run('python -m src.stylegan.train --gpu 0 --image_dir /kaggle/input/all-dogs/all-dogs --out result --ch 256 --stage_interval 100000 --keep_smoothed_gen')
