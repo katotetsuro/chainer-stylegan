@@ -161,11 +161,11 @@ class StyleGenerator(chainer.Chain):
         self.max_stage = 17
         with self.init_scope():
             self.blocks = chainer.ChainList(
-                SynthesisBlock(ch, ch, upsample=False), #4
-                SynthesisBlock(ch, ch, upsample=True, enable_blur=enable_blur), #8 
-                SynthesisBlock(ch, ch, upsample=True, enable_blur=enable_blur), #16
-                SynthesisBlock(ch, ch, upsample=True, enable_blur=enable_blur), # 32
-                SynthesisBlock(ch // 2, ch, upsample=True, enable_blur=enable_blur), #64
+                SynthesisBlock(ch, ch, ch, upsample=False), #4
+                SynthesisBlock(ch, ch, ch, upsample=True, enable_blur=enable_blur), #8 
+                SynthesisBlock(ch, ch, ch, upsample=True, enable_blur=enable_blur), #16
+                SynthesisBlock(ch, ch, ch, upsample=True, enable_blur=enable_blur), # 32
+                SynthesisBlock(ch // 2, ch, ch, upsample=True, enable_blur=enable_blur), #64
                 # SynthesisBlock(ch // 4, ch // 2, upsample=True, enable_blur=enable_blur), #128
                 # SynthesisBlock(ch // 8, ch // 4, upsample=True, enable_blur=enable_blur), #256
                 # SynthesisBlock(ch // 16, ch // 8, upsample=True, enable_blur=enable_blur), #512

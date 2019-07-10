@@ -22,7 +22,7 @@ parser.add_argument('--max_stage', default=9, help='Size of image.')
 parser.add_argument('--auto_resume', action='store_true', help='Whether to automatically resume')
 
 # algorithm & architecture
-parser.add_argument('--ch', default=512, help='#Channels')
+parser.add_argument('--ch', type=int, default=512, help='#Channels')
 parser.add_argument('--debug_start_instance', default=0, help='Change starting iteration for debugging.')
 
 
@@ -40,7 +40,7 @@ parser.add_argument('--dataset_config', default='', help='Dataset config json')
 parser.add_argument('--dataset_worker_num', default=4, help='Number of threads in dataset loader')
 parser.add_argument('--image_dir', default='', help='Image directory containing training data')
 
-parser.add_argument('--snapshot_interval', default=1000, help='Interval of snapshot')
+parser.add_argument('--snapshot_interval', default=3000, help='Interval of snapshot')
 parser.add_argument('--evaluation_sample_interval', default=500, help='Interval of evaluation sampling')
 parser.add_argument('--display_interval', default=100, help='Interval of displaying log to console')
 parser.add_argument('--get_model_from_interation', default='', help='Load this iteration (it is a string)')
