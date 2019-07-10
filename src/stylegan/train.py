@@ -264,8 +264,18 @@ def main():
         'total_gpu': running_helper.fleet_size
     }
     updater = Updater(**updater_args)
+
+    class TimeupTrigger():
+        def __call__(self, _trainer):
+            if _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage:
+                return True
+            time = _trainer.elapsed_time
+            if time > 8.5 * 60 * 60:
+                print('facing time-limit. elapsed time=:{}'.format(time))
+                return True
+            return False
     trainer = training.Trainer(
-        updater, (lambda _trainer: _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage), out=FLAGS.out)
+        updater, TimeupTrigger(), out=FLAGS.out)
 
     # Set up extensions
     if running_helper.is_master:
