@@ -6,11 +6,11 @@ parser = ArgumentParser()
 
 # hps (training dynamics)
 parser.add_argument('--seed', type=int, default=19260817)
-parser.add_argument('--adam_alpha_g', default=0.001, help='alpha in Adam optimizer')
-parser.add_argument('--adam_alpha_d', default=0.001, help='alpha in Adam optimizer')
+parser.add_argument('--adam_alpha_g', type=float, default=0.001, help='alpha in Adam optimizer')
+parser.add_argument('--adam_alpha_d', type=float, default=0.001, help='alpha in Adam optimizer')
 parser.add_argument('--adam_beta1', default=0.0, help='beta1 in Adam optimizer')
 parser.add_argument('--adam_beta2', default=0.999, help='beta2 in Adam optimizer')
-parser.add_argument('--lambda_gp', default=5.0, help='Lambda GP')
+parser.add_argument('--lambda_gp', type=float, default=5.0, help='Lambda GP')
 parser.add_argument('--smoothing', default=0.999)
 parser.add_argument('--keep_smoothed_gen', action='store_true', help='Whether to keep a smoothed version of generator.')
 parser.add_argument('--dynamic_batch_size', type=str, default='256,256,256,128,128,64,64,32,32',
@@ -53,7 +53,7 @@ parser.add_argument('--fid_clfs_path', default='', help='classifier path')
 parser.add_argument('--fid_skip_first', action='store_true', help='Whether to skip FID calculation when iter = 0')
 
 # Style GAN
-parser.add_argument('--style_mixing_rate', default=0.9, help=' Style Mixing Prob')
+parser.add_argument('--style_mixing_rate', type=float, default=0.9, help=' Style Mixing Prob')
 parser.add_argument('--enable_blur', action='store_true', help='Enable blur function after upscaling/downscaling')
 
 

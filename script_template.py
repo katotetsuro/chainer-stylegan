@@ -21,4 +21,7 @@ def run(command):
 
 
 run('cd /home && python setup.py develop --install-dir /home')
-run('python -m src.stylegan.train --gpu 0 --image_dir /kaggle/input/all-dogs/all-dogs --out result --ch 256 --stage_interval 100000 --keep_smoothed_gen')
+print('cropping images start.')
+run('python -m src.dataset.trim_images /kaggle/input/all-dogs/all-dogs /kaggle/input/annotation/Annotation /home/images')
+print('cropping images finished.')
+run('python -m src.stylegan.train --gpu 0 --image_dir /home/images --out result --ch 256 --stage_interval 300000 --keep_smoothed_gen --adam_alpha_g 1e-4 --adam_alpha_d 1e-4')

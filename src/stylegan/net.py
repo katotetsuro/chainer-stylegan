@@ -251,7 +251,7 @@ class Generator(chainer.Chain):
         super(Generator, self).__init__()
         self.ch = ch
         with self.init_scope():
-            self.mapping = MappingNetwork()
+            self.mapping = MappingNetwork(ch)
             self.gen = StyleGenerator(ch)
 
     def make_hidden(self, batch_size):

@@ -4,8 +4,8 @@ import chainer
 from PIL import Image
 import os
 
-def create_submit_data(mapping, gen):
-    z = zipfile.PyZipFile('images.zip', mode='w')
+def create_submit_data(mapping, gen, smooth):
+    z = zipfile.PyZipFile('images.zip' if not smooth else 'images_s.zip', mode='w')
     xp = gen.xp
     batchsize = 100
     num_output = 10000

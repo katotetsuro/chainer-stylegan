@@ -44,6 +44,11 @@ def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, sub
     @chainer.training.make_extension()
     def make_image(trainer):
         nonlocal rows, cols, z
+        if trainer.updater.stage < 8:
+            print('skip visualization')
+            return
+        else:
+            print('visualize.')
         if trainer.updater.stage > 15:
             rows = min(rows, 2)
             cols = min(cols, 2)
@@ -190,6 +195,7 @@ class RunningHelper(object):
 
             def __call__(self, x):
                 x = chainercv.transforms.resize(x, (self.size, self.size))
+                x = chainercv.transforms.random_flip(x, False, True)
                 x = x / 127.5 - 1
                 return x
 
@@ -268,7 +274,7 @@ def main():
     class TimeupTrigger():
         def __call__(self, _trainer):
             if _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage:
-                return True
+               return True
             time = _trainer.elapsed_time
             if time > 8.5 * 60 * 60:
                 print('facing time-limit. elapsed time=:{}'.format(time))
@@ -396,7 +402,11 @@ def main():
     for model, model_name in zip(models, model_names):
         chainer.serializers.save_npz(FLAGS.out + '/' + model_name + '_latest.npz', model)
 
-    create_submit_data(models[0], models[1])
+    print('training finished. generating submit images...')
+    create_submit_data(mapping, generator, False)
+    if FLAGS.keep_smoothed_gen:
+        print('saving smoothed result')
+        create_submit_data(smoothed_mapping, smoothed_generator, True)
 
 import pdb, traceback, sys, code 
 
