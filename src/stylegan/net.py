@@ -316,7 +316,7 @@ class DiscriminatorBlock(chainer.Chain):
 
 class Discriminator(chainer.Chain):
 
-    def __init__(self, ch=512, enable_blur=False):
+    def __init__(self, ch=512, enable_blur=False, n_class=10):
         super(Discriminator, self).__init__()
         self.max_stage = 17
 
@@ -343,6 +343,7 @@ class Discriminator(chainer.Chain):
                 EqualizedConv2d(3, ch // 16, 1, 1, 0),
                 EqualizedConv2d(3, ch // 32, 1, 1, 0),)
             self.enable_blur = enable_blur
+            self.fc =L.Linear(None, n_class)
             
     def __call__(self, x, stage):
         '''
@@ -361,6 +362,8 @@ class Discriminator(chainer.Chain):
         if stage % 2 == 0:
             k = (stage - 2) // 2
             h = F.leaky_relu(self.ins[k + 1](h))
+            y = F.average(h, axis=(2, 3), keepdims=False)
+            class_prob = self.fc(y)
             for i in reversed(range(0, (k + 1) + 1)):  # k+1 .. 0
                 h = self.blocks[i](h)
         else:
@@ -370,8 +373,10 @@ class Discriminator(chainer.Chain):
             h_1 = self.blocks[k + 1](F.leaky_relu(self.ins[k + 1](x)))
             assert 0. <= alpha < 1.
             h = (1.0 - alpha) * h_0 + alpha * h_1
+            y = F.average(h, axis=(2, 3), keepdims=False)
+            class_prob = self.fc(y)
 
             for i in reversed(range(0, k + 1)):  # k .. 0
                 h = self.blocks[i](h)
 
-        return h
+        return h, class_prob

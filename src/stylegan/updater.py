@@ -22,6 +22,8 @@ from src.common.utils.copy_param import soft_copy_param
 from src.common.utils.pggan import downsize_real
 from src.common.utils.save_images import convert_batch_images
 
+n_class = 120
+
 class StageManager(object):
 
     def __init__(self, stage_interval, 
@@ -183,13 +185,16 @@ class Updater(chainer.training.Updater):
     def get_x_real_data(self, batch, batch_size):
         xp = self.gen.xp
         x_real_data = []
+        x_real_label = []
         for i in range(batch_size):
             this_instance = batch[i]
             if isinstance(this_instance, tuple):
-                this_instance = this_instance[0]  # It's (data, data_id), so take the first one.
+                this_instance, label = this_instance[0]  # It's (data, data_id), so take the first one.
             x_real_data.append(np.asarray(this_instance).astype("f"))
+            x_real_label.append(label)
         x_real_data = xp.asarray(x_real_data)
-        return x_real_data
+        x_real_label = xp.asarray(x_real_label)
+        return x_real_data, x_real_label
 
     def get_z_fake_data(self, batch_size):
         xp = self.map.xp
@@ -229,8 +234,13 @@ class Updater(chainer.training.Updater):
 
         lr_scale = get_lr_scale_factor(self.total_gpu, stage)
 
-        x_real_data = self.get_x_real_data(batch, batch_size)
+        x_real_data, x_real_label = self.get_x_real_data(batch, batch_size)
         z_fake_data = self.get_z_fake_data(batch_size)
+        l = xp.identity(n_class)[x_real_label.ravel()]
+        import pdb
+        pdb.set_trace()
+        z_fake_data = xp.concatenate([z_fake_data, l], axis=1)
+        gen_label = np.random.randint(0, n_class, batch_size)
 
         x_real = Variable(x_real_data)
         # Image.fromarray(convert_batch_images(x_real.data.get(), 4, 4)).save('no_downsized.png')
@@ -247,8 +257,9 @@ class Updater(chainer.training.Updater):
             x_fake = self.gen(w_fake, stage=stage, w2=w_fake2)
         else:
             x_fake = self.gen(w_fake, stage=stage)
-        y_fake = self.dis(x_fake, stage=stage)
+        y_fake, label_fake = self.dis(x_fake, stage=stage)
         loss_gen = loss_func_dcgan_gen(y_fake) * lr_scale
+        loss_gen += F.softmax_cross_entropy(label_fake, gen_label)
         if chainer.global_config.debug:
             g = c.build_computational_graph(loss_gen)
             with open('out_loss_gen', 'w') as o:

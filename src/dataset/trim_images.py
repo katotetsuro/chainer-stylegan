@@ -28,6 +28,7 @@ def main():
             continue
         img = Image.open(image)
         for i, o in enumerate(objects):
+            category_name = o.find('name').text
             bndbox = o.find('bndbox') 
             xmin = int(bndbox.find('xmin').text)
             ymin = int(bndbox.find('ymin').text)
@@ -37,7 +38,10 @@ def main():
             cropped = img.crop((xmin, ymin, xmin+w, ymin+w))
             cropped = cropped.resize((64,64), Image.ANTIALIAS)
             out_filename = image.stem + '_{}'.format(i) + image.suffix
-            cropped.save(Path(args.dst).joinpath(out_filename))
+            save_dir = Path(args.dst).joinpath(category_name)
+            if not save_dir.exists():
+                save_dir.mkdir(parents=True, exist_ok=False)
+            cropped.save(save_dir.joinpath(out_filename))
 
 if __name__ == '__main__':
     main()
