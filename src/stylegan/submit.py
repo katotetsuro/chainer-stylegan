@@ -17,6 +17,7 @@ def create_submit_data(mapping, gen, smooth):
             x = gen(mapping(h), stage=8)
             x = (x + 1) * 127.5
         x = chainer.cuda.to_cpu(x.array)
+        x = xp.clip(x, 0.0, 255.0)
         x = x.transpose(0, 2, 3, 1).astype(np.uint8)
         for j in range(batchsize):
             k = i * batchsize + j
