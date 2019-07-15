@@ -39,6 +39,7 @@ from .config import FLAGS
 from common.utils.save_images import convert_batch_images
 from common.evaluation.fid import API as FIDAPI, fid_extension
 from .submit import create_submit_data
+from .dataset.label_images import load_label_image
 
 def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, subdir='preview'):
     @chainer.training.make_extension()
@@ -193,16 +194,16 @@ class RunningHelper(object):
             def __init__(self, size):
                 self.size = size
 
-            def __call__(self, x):
+            def __call__(self, in_data):
+                x, t = in_data
                 x = chainercv.transforms.resize(x, (self.size, self.size))
                 x = chainercv.transforms.random_flip(x, False, True)
                 x = x / 127.5 - 1
-                return x
+                return x, t
 
         if self.is_master:
             size = 4 * (2 ** ((stage_int + 1) // 2))
-            images = list(Path(image_dir).glob('*.jpg'))
-            _dataset = chainer.datasets.ImageDataset(images, dtype=np.float32)
+            _dataset = chainer.datasets.LabeledImageDataset(load_label_image(image_dir), dtype=np.float32)
             _dataset = chainer.datasets.TransformDataset(_dataset, Transform(size))
             self.print_log('Add (master) dataset for size {}'.format(size))
         else:

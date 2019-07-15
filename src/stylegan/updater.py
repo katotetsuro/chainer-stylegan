@@ -187,11 +187,9 @@ class Updater(chainer.training.Updater):
         x_real_data = []
         x_real_label = []
         for i in range(batch_size):
-            this_instance = batch[i]
-            if isinstance(this_instance, tuple):
-                this_instance, label = this_instance[0]  # It's (data, data_id), so take the first one.
-            x_real_data.append(np.asarray(this_instance).astype("f"))
-            x_real_label.append(label)
+            x, t = batch[i]
+            x_real_data.append(x)
+            x_real_label.append(t)
         x_real_data = xp.asarray(x_real_data)
         x_real_label = xp.asarray(x_real_label)
         return x_real_data, x_real_label
@@ -289,7 +287,7 @@ class Updater(chainer.training.Updater):
                 x_fake = self.gen(w_fake, stage=stage)
 
         x_fake.unchain_backward()
-        y_fake = self.dis(x_fake, stage=stage)
+        y_fake, label_fake = self.dis(x_fake, stage=stage)
         y_real = self.dis(x_real, stage=stage)
         loss_adv = loss_func_dcgan_dis(y_fake, y_real)
 
