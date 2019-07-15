@@ -339,10 +339,6 @@ def main():
 
         trainer.extend(extensions.LogReport(keys=report_keys, trigger=(FLAGS.display_interval, 'iteration')))
         trainer.extend(extensions.PrintReport(report_keys), trigger=(FLAGS.display_interval, 'iteration'))
-        # todo dynamic trigger setting
-        trainer.extend(extensions.ExponentialShift('alpha', 0.1, optimizer=updater._optimizers['map']), trigger=(55000, 'iteration'))
-        trainer.extend(extensions.ExponentialShift('alpha', 0.1, optimizer=updater._optimizers['gen']), trigger=(55000, 'iteration'))
-        trainer.extend(extensions.ExponentialShift('alpha', 0.1, optimizer=updater._optimizers['dis']), trigger=(55000, 'iteration'))
 
     # Recover if possible
     if FLAGS.get_model_from_interation != '':
