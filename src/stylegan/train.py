@@ -39,6 +39,7 @@ from .config import FLAGS
 from common.utils.save_images import convert_batch_images
 from common.evaluation.fid import API as FIDAPI, fid_extension
 from .submit import create_submit_data
+from dataset.trim_images import load_dataset
 
 def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, subdir='preview'):
     @chainer.training.make_extension()
@@ -201,8 +202,8 @@ class RunningHelper(object):
 
         if self.is_master:
             size = 4 * (2 ** ((stage_int + 1) // 2))
-            images = list(Path(image_dir).glob('*.jpg'))
-            _dataset = chainer.datasets.ImageDataset(images, dtype=np.float32)
+            #_dataset = chainer.datasets.ImageDataset(images, dtype=np.float32)
+            _dataset = np.load(image_dir)
             _dataset = chainer.datasets.TransformDataset(_dataset, Transform(size))
             self.print_log('Add (master) dataset for size {}'.format(size))
         else:
@@ -276,7 +277,7 @@ def main():
             if _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage:
                return True
             time = _trainer.elapsed_time
-            if time > 8.5 * 60 * 60:
+            if time > 8.75 * 60 * 60:
                 print('facing time-limit. elapsed time=:{}'.format(time))
                 return True
             return False
