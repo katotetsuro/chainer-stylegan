@@ -217,6 +217,10 @@ class RunningHelper(object):
 
 
 def main():
+    chainer.global_config.type_check = False
+    chainer.global_config.autotune = True
+    chainer.backends.cuda.set_max_workspace_size(512 * 1024 * 1024)
+
     print(FLAGS)
     running_helper = RunningHelper(FLAGS.use_mpi)
     global mpi_is_master
