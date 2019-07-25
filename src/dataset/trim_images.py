@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from PIL import Image 
 from pathlib import Path
 
-def main(save_image=False):
+def main():
     blacklist = [
         'African_hunting_dog',
         'basenji',
@@ -17,6 +17,7 @@ def main(save_image=False):
     parser.add_argument('image_dir')
     parser.add_argument('annotation_dir')
     parser.add_argument('dst')
+    parser.add_argument('--save-image', action='store_true')
 
     args = parser.parse_args()
 
@@ -37,17 +38,28 @@ def main(save_image=False):
             continue
         
         img = Image.open(image)
+        s = min(img.width, img.height)
+        org = img.crop((0, 0, s, s))
+        org = org.resize((64,64), Image.ANTIALIAS)
+        if args.save_image:
+            org.save(Path(args.dst).joinpath(image.name))
+        ret.append(np.asanyarray(org))
+        
         for i, o in enumerate(objects):
             bndbox = o.find('bndbox') 
             xmin = int(bndbox.find('xmin').text)
             ymin = int(bndbox.find('ymin').text)
             xmax = int(bndbox.find('xmax').text)
             ymax = int(bndbox.find('ymax').text)
-            w = np.min((xmax - xmin, ymax - ymin))
+            dx = xmax - xmin
+            dy = ymax - ymin
+            # if min(dx, dy)/max(dx, dy) < 0.6:
+            #     continue
+            w = np.min((dx, dy))
             cropped = img.crop((xmin, ymin, xmin+w, ymin+w))
             cropped = cropped.resize((64,64), Image.ANTIALIAS)
             out_filename = image.stem + '_{}'.format(i) + image.suffix
-            if save_image:
+            if args.save_image:
                 cropped.save(Path(args.dst).joinpath(out_filename))
 
             ret.append(np.asarray(cropped))
