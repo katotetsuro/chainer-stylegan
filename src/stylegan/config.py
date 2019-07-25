@@ -6,8 +6,8 @@ parser = ArgumentParser()
 
 # hps (training dynamics)
 parser.add_argument('--seed', type=int, default=19260817)
-parser.add_argument('--adam_alpha_g', type=float, default=0.001, help='alpha in Adam optimizer')
-parser.add_argument('--adam_alpha_d', type=float, default=0.001, help='alpha in Adam optimizer')
+parser.add_argument('--adam_alpha_g', type=float, default=0.002, help='alpha in Adam optimizer')
+parser.add_argument('--adam_alpha_d', type=float, default=0.002, help='alpha in Adam optimizer')
 parser.add_argument('--adam_beta1', type=float, default=0.0, help='beta1 in Adam optimizer')
 parser.add_argument('--adam_beta2', type=float, default=0.999, help='beta2 in Adam optimizer')
 parser.add_argument('--lambda_gp', type=float, default=5.0, help='Lambda GP')
@@ -16,7 +16,7 @@ parser.add_argument('--keep_smoothed_gen', action='store_true', help='Whether to
 parser.add_argument('--dynamic_batch_size', type=str, default='256,256,256,128,128,64,64,32,32',
                      help='comma-split list of dynamic batch size w.p.t. stage')
 parser.add_argument('--stage_interval', type=int, default=40000)
-parser.add_argument('--max_stage', default=9, help='Size of image.')
+parser.add_argument('--max_stage', type=int, default=9, help='Size of image.')
 
 
 parser.add_argument('--auto_resume', action='store_true', help='Whether to automatically resume')
@@ -81,7 +81,7 @@ stage2reso = {
 }
 
 gpu_lr = {
-    1: {6: 1.5, 7: 1.5, 8: 1.5},
+    1: {6: 1.5, 7: 2.0, 8: 2.5, 9: 2.0, 10: 2.0},
     2: {13: 1.5, 14: 1.5, 15: 2, 16: 2, 17: 2},
     3: {11: 1.5, 12: 1.5, 13: 2, 14: 2, 15: 2.5, 16: 2.5, 17: 2.5},
     4: {11: 1.5, 12: 1.5, 13: 2, 14: 2, 15: 3, 16: 3, 17: 3},

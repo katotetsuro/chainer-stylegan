@@ -22,7 +22,7 @@ def create_submit_data(mapping, gen, smooth):
         for j in range(batchsize):
             k = i * batchsize + j
             f = str(k)+'.png'
-            Image.fromarray(x[j]).save(f,'PNG')
+            Image.fromarray(x[j]).resize((64, 64)).save(f,'PNG')
             z.write(f)
             os.remove(f)
     z.close()

@@ -64,7 +64,7 @@ class StageManager(object):
 
     @property
     def ratio_in_stage(self):
-        return self.counter_batch_in_stage * 1.0 / self.total_batch_in_stage
+        return min(self.counter_batch_in_stage * 1.0 / self.total_batch_in_stage, 0.999)
 
     @property
     def stage(self):
@@ -88,6 +88,8 @@ class StageManager(object):
         self.counter_batch += 1
         if self.counter_batch_in_stage == self.dynamic_batch_count[self.stage_int]:
             self.stage_int += 1
+            print(self.stage_int)
+            self.stage_int = min(self.stage_int, 8)
 
     def tick_a_batch(self):
         stage_int = self.stage_int

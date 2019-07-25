@@ -39,7 +39,7 @@ from .config import FLAGS
 from common.utils.save_images import convert_batch_images
 from common.evaluation.fid import API as FIDAPI, fid_extension
 from .submit import create_submit_data
-from .dataset.label_images import load_label_image
+from dataset.trim_images import load_dataset
 
 def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, subdir='preview'):
     @chainer.training.make_extension()
@@ -203,7 +203,8 @@ class RunningHelper(object):
 
         if self.is_master:
             size = 4 * (2 ** ((stage_int + 1) // 2))
-            _dataset = chainer.datasets.LabeledImageDataset(load_label_image(image_dir), dtype=np.float32)
+            #_dataset = chainer.datasets.ImageDataset(images, dtype=np.float32)
+            _dataset = np.load(image_dir)
             _dataset = chainer.datasets.TransformDataset(_dataset, Transform(size))
             self.print_log('Add (master) dataset for size {}'.format(size))
         else:
@@ -217,6 +218,10 @@ class RunningHelper(object):
 
 
 def main():
+    chainer.global_config.type_check = False
+    chainer.global_config.autotune = True
+    chainer.backends.cuda.set_max_workspace_size(512 * 1024 * 1024)
+
     print(FLAGS)
     running_helper = RunningHelper(FLAGS.use_mpi)
     global mpi_is_master
@@ -277,7 +282,7 @@ def main():
             if _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage:
                return True
             time = _trainer.elapsed_time
-            if time > 8.5 * 60 * 60:
+            if time > 8.75 * 60 * 60:
                 print('facing time-limit. elapsed time=:{}'.format(time))
                 return True
             return False
