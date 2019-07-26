@@ -316,7 +316,7 @@ class DiscriminatorBlock(chainer.Chain):
 
 class Discriminator(chainer.Chain):
 
-    def __init__(self, ch=512, enable_blur=False, n_class=10):
+    def __init__(self, ch=512, enable_blur=False, n_class=120):
         super(Discriminator, self).__init__()
         self.max_stage = 17
 
@@ -327,23 +327,30 @@ class Discriminator(chainer.Chain):
                 DiscriminatorBlock(ch, ch, enable_blur=enable_blur),
                 DiscriminatorBlock(ch, ch, enable_blur=enable_blur),
                 DiscriminatorBlock(ch, ch, enable_blur=enable_blur),
-                DiscriminatorBlock(ch // 2, ch, enable_blur=enable_blur),
-                DiscriminatorBlock(ch // 4, ch // 2, enable_blur=enable_blur),
-                DiscriminatorBlock(ch // 8, ch // 4, enable_blur=enable_blur),
-                DiscriminatorBlock(ch // 16, ch // 8, enable_blur=enable_blur),
-                DiscriminatorBlock(ch // 32, ch // 16, enable_blur=enable_blur),)
+                DiscriminatorBlock(ch // 2, ch, enable_blur=enable_blur))
+                # DiscriminatorBlock(ch // 4, ch // 2, enable_blur=enable_blur),
+                # DiscriminatorBlock(ch // 8, ch // 4, enable_blur=enable_blur),
+                # DiscriminatorBlock(ch // 16, ch // 8, enable_blur=enable_blur),
+                # DiscriminatorBlock(ch // 32, ch // 16, enable_blur=enable_blur),)
             self.ins = chainer.ChainList(
                 EqualizedConv2d(3, ch, 1, 1, 0),
                 EqualizedConv2d(3, ch, 1, 1, 0),
                 EqualizedConv2d(3, ch, 1, 1, 0),
                 EqualizedConv2d(3, ch, 1, 1, 0),
-                EqualizedConv2d(3, ch // 2, 1, 1, 0),
-                EqualizedConv2d(3, ch // 4, 1, 1, 0),
-                EqualizedConv2d(3, ch // 8, 1, 1, 0),
-                EqualizedConv2d(3, ch // 16, 1, 1, 0),
-                EqualizedConv2d(3, ch // 32, 1, 1, 0),)
+                EqualizedConv2d(3, ch // 2, 1, 1, 0))
+                # EqualizedConv2d(3, ch // 4, 1, 1, 0),
+                # EqualizedConv2d(3, ch // 8, 1, 1, 0),
+                # EqualizedConv2d(3, ch // 16, 1, 1, 0),
+                # EqualizedConv2d(3, ch // 32, 1, 1, 0),)
+
+            self.cls = chainer.ChainList(
+                chainer.Sequential(lambda x: F.average(x, axis=(2,3)), L.Linear(None, n_class)),
+                chainer.Sequential(lambda x: F.average(x, axis=(2,3)), L.Linear(None, n_class)),
+                chainer.Sequential(lambda x: F.average(x, axis=(2,3)), L.Linear(None, n_class)),
+                chainer.Sequential(lambda x: F.average(x, axis=(2,3)), L.Linear(None, n_class)),
+                chainer.Sequential(lambda x: F.average(x, axis=(2,3)), L.Linear(None, n_class))
+            )
             self.enable_blur = enable_blur
-            self.fc =L.Linear(None, n_class)
             
     def __call__(self, x, stage):
         '''
@@ -363,8 +370,9 @@ class Discriminator(chainer.Chain):
             k = (stage - 2) // 2
             h = F.leaky_relu(self.ins[k + 1](h))
             y = F.average(h, axis=(2, 3), keepdims=False)
-            class_prob = self.fc(y)
             for i in reversed(range(0, (k + 1) + 1)):  # k+1 .. 0
+                if i == 0:
+                    class_prob = self.cls[k+1](h)
                 h = self.blocks[i](h)
         else:
             k = (stage - 1) // 2
@@ -374,9 +382,10 @@ class Discriminator(chainer.Chain):
             assert 0. <= alpha < 1.
             h = (1.0 - alpha) * h_0 + alpha * h_1
             y = F.average(h, axis=(2, 3), keepdims=False)
-            class_prob = self.fc(y)
 
             for i in reversed(range(0, k + 1)):  # k .. 0
+                if i == 0:
+                    class_prob = self.cls[k](h)
                 h = self.blocks[i](h)
 
         return h, class_prob

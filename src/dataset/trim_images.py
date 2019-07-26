@@ -24,7 +24,10 @@ def main():
     images = list(Path(args.image_dir).glob('*.jpg'))
     category_to_dir = {str(d.stem).split('-')[0] : d for d in Path(args.annotation_dir).glob('*') if d.is_dir()}
     Path(args.dst).mkdir(parents=True, exist_ok=True)
+
     ret = []
+    categories = []
+
     for image in images:
         name = image.stem
         category, _ = name.split('_')
@@ -38,12 +41,12 @@ def main():
             continue
         
         img = Image.open(image)
-        s = min(img.width, img.height)
-        org = img.crop((0, 0, s, s))
-        org = org.resize((64,64), Image.ANTIALIAS)
-        if args.save_image:
-            org.save(Path(args.dst).joinpath(image.name))
-        ret.append(np.asanyarray(org))
+        # s = min(img.width, img.height)
+        # org = img.crop((0, 0, s, s))
+        # org = org.resize((64,64), Image.ANTIALIAS)
+        # if args.save_image:
+        #     org.save(Path(args.dst).joinpath(image.name))
+        # ret.append(np.asanyarray(org))
         
         for i, o in enumerate(objects):
             category_name = o.find('name').text
@@ -63,11 +66,14 @@ def main():
             if args.save_image:
                 cropped.save(Path(args.dst).joinpath(out_filename))
 
-            ret.append(np.asarray(cropped))
+            if category_name in categories:
+                label = categories.index(category_name)
+            else:
+                label = len(categories)
+                categories.append(category_name)
+            ret.append((np.asarray(cropped).transpose(2, 0, 1).astype(np.float32), np.array(label, np.int32)))
 
-    ret = np.asanyarray(ret)
-    ret = ret.transpose(0, 3, 1, 2).astype(np.float32)
-    np.save(Path(args.dst).joinpath('data.npy'), ret)
+    np.save(Path(args.dst).joinpath('data.npy'), ret, allow_pickle=True)
 
 def load_dataset(image_dir, annotation_dir):
     blacklist = [

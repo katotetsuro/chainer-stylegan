@@ -41,9 +41,11 @@ parser.add_argument('--dataset_worker_num', default=4, help='Number of threads i
 parser.add_argument('--image_dir', default='', help='Image directory containing training data')
 
 parser.add_argument('--snapshot_interval', type=int, default=30000, help='Interval of snapshot')
-parser.add_argument('--evaluation_sample_interval', type=int, default=2000, help='Interval of evaluation sampling')
+parser.add_argument('--evaluation_sample_interval', type=int, default=20000, help='Interval of evaluation sampling')
 parser.add_argument('--display_interval', default=100, help='Interval of displaying log to console')
 parser.add_argument('--get_model_from_interation', default='', help='Load this iteration (it is a string)')
+parser.add_argument('--lr_scales', default='', type=str)
+parser.add_argument('--ac', default=0.1, type=float)
 
 # hps FID
 parser.add_argument('--fid_interval', default=0, help='Enable FID when > 0')
@@ -81,7 +83,7 @@ stage2reso = {
 }
 
 gpu_lr = {
-    1: {6: 1.5, 7: 2.0, 8: 2.5, 9: 2.0, 10: 2.0},
+    1: {6: 1.0, 7: 1.0, 8: 1.0, 9: 2.0, 10: 2.0},
     2: {13: 1.5, 14: 1.5, 15: 2, 16: 2, 17: 2},
     3: {11: 1.5, 12: 1.5, 13: 2, 14: 2, 15: 2.5, 16: 2.5, 17: 2.5},
     4: {11: 1.5, 12: 1.5, 13: 2, 14: 2, 15: 3, 16: 3, 17: 3},
@@ -94,3 +96,14 @@ def get_lr_scale_factor(total_gpu, stage):
     if stage >= 18:
         return gpu_lr_d[17]
     return gpu_lr_d.get(stage, 1)
+
+def set_lr_scale_factor(custom_scales: str):
+    s = custom_scales.split(',')
+    for i in range(len(s)//2):
+        key = int(s[2 * i])
+        value = float(s[2 * i + 1])
+        gpu_lr[1][key] = value
+
+    print('gpu_lr: ', gpu_lr[1])
+
+set_lr_scale_factor(FLAGS.lr_scales)

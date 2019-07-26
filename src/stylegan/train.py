@@ -45,11 +45,11 @@ def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, sub
     @chainer.training.make_extension()
     def make_image(trainer):
         nonlocal rows, cols, z
-        if trainer.updater.stage < 8:
-            print('skip visualization')
-            return
-        else:
-            print('visualize.')
+        # if trainer.updater.stage < 8:
+        #     print('skip visualization')
+        #     return
+        # else:
+        #     print('visualize.')
         if trainer.updater.stage > 15:
             rows = min(rows, 2)
             cols = min(cols, 2)
@@ -87,6 +87,7 @@ def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, sub
 
 def make_iterator_func(dataset, batch_size):
     return chainer.iterators.MultithreadIterator(dataset, batch_size=batch_size,  repeat=True, shuffle=True, n_threads=FLAGS.dataset_worker_num)
+    #return chainer.iterators.SerialIterator(dataset, batch_size=batch_size,  repeat=True, shuffle=True)
 
 
 def batch_generate_func(gen, mapping, trainer):
@@ -196,6 +197,7 @@ class RunningHelper(object):
 
             def __call__(self, in_data):
                 x, t = in_data
+                t = t.astype(np.int32)
                 x = chainercv.transforms.resize(x, (self.size, self.size))
                 x = chainercv.transforms.random_flip(x, False, True)
                 x = x / 127.5 - 1
@@ -204,7 +206,7 @@ class RunningHelper(object):
         if self.is_master:
             size = 4 * (2 ** ((stage_int + 1) // 2))
             #_dataset = chainer.datasets.ImageDataset(images, dtype=np.float32)
-            _dataset = np.load(image_dir)
+            _dataset = np.load(image_dir, allow_pickle=True)
             _dataset = chainer.datasets.TransformDataset(_dataset, Transform(size))
             self.print_log('Add (master) dataset for size {}'.format(size))
         else:
@@ -218,7 +220,7 @@ class RunningHelper(object):
 
 
 def main():
-    chainer.global_config.type_check = False
+#    chainer.global_config.type_check = False
     chainer.global_config.autotune = True
     chainer.backends.cuda.set_max_workspace_size(512 * 1024 * 1024)
 
@@ -273,7 +275,8 @@ def main():
         'smoothing': FLAGS.smoothing,
         'style_mixing_rate': FLAGS.style_mixing_rate,
         'use_cleargrads': running_helper.use_cleargrads,
-        'total_gpu': running_helper.fleet_size
+        'total_gpu': running_helper.fleet_size,
+        'ac_weight': FLAGS.ac
     }
     updater = Updater(**updater_args)
 

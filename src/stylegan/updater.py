@@ -150,10 +150,9 @@ class Updater(chainer.training.Updater):
         self.use_cleargrads = kwargs.pop('use_cleargrads')
         self.smoothing = kwargs.pop('smoothing')
         self.lambda_gp = kwargs.pop('lambda_gp')
-
         self.total_gpu = kwargs.pop('total_gpu')
-
         self.style_mixing_rate = kwargs.pop('style_mixing_rate')
+        self.ac_weight = kwargs.pop('ac_weight')
 
     def finalize(self):
         pass
@@ -236,11 +235,7 @@ class Updater(chainer.training.Updater):
 
         x_real_data, x_real_label = self.get_x_real_data(batch, batch_size)
         z_fake_data = self.get_z_fake_data(batch_size)
-        l = xp.identity(n_class)[x_real_label.ravel()]
-        import pdb
-        pdb.set_trace()
-        z_fake_data = xp.concatenate([z_fake_data, l], axis=1)
-        gen_label = np.random.randint(0, n_class, batch_size)
+        l = xp.ones(len(z_fake_data)).astype(xp.int32) * -1
 
         x_real = Variable(x_real_data)
         # Image.fromarray(convert_batch_images(x_real.data.get(), 4, 4)).save('no_downsized.png')
@@ -257,9 +252,8 @@ class Updater(chainer.training.Updater):
             x_fake = self.gen(w_fake, stage=stage, w2=w_fake2)
         else:
             x_fake = self.gen(w_fake, stage=stage)
-        y_fake, label_fake = self.dis(x_fake, stage=stage)
+        y_fake, _ = self.dis(x_fake, stage=stage)
         loss_gen = loss_func_dcgan_gen(y_fake) * lr_scale
-        loss_gen += F.softmax_cross_entropy(label_fake, gen_label)
         if chainer.global_config.debug:
             g = c.build_computational_graph(loss_gen)
             with open('out_loss_gen', 'w') as o:
@@ -289,9 +283,10 @@ class Updater(chainer.training.Updater):
                 x_fake = self.gen(w_fake, stage=stage)
 
         x_fake.unchain_backward()
-        y_fake, label_fake = self.dis(x_fake, stage=stage)
-        y_real = self.dis(x_real, stage=stage)
+        y_fake, _ = self.dis(x_fake, stage=stage)
+        y_real, label_real = self.dis(x_real, stage=stage)
         loss_adv = loss_func_dcgan_dis(y_fake, y_real)
+        loss_adv += F.softmax_cross_entropy(label_real, x_real_label) * self.ac_weight
 
         if self.lambda_gp > 0:
             x_perturbed = x_real
