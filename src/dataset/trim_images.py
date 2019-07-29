@@ -3,6 +3,10 @@ import numpy as np
 import xml.etree.ElementTree as ET
 from PIL import Image 
 from pathlib import Path
+import cv2
+from os.path import join
+from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor
 
 def main():
     blacklist = [
@@ -18,12 +22,18 @@ def main():
     parser.add_argument('annotation_dir')
     parser.add_argument('dst')
     parser.add_argument('--save-image', action='store_true')
+    parser.add_argument('--xml-dir', default='/opt/conda/lib/python3.6/site-packages/cv2/data/')
 
     args = parser.parse_args()
 
     images = list(Path(args.image_dir).glob('*.jpg'))
     category_to_dir = {str(d.stem).split('-')[0] : d for d in Path(args.annotation_dir).glob('*') if d.is_dir()}
     Path(args.dst).mkdir(parents=True, exist_ok=True)
+
+    detectors = [
+        cv2.CascadeClassifier(join(args.xml_dir, 'haarcascade_frontalcatface_extended.xml')),
+#        cv2.CascadeClassifier(join(args.xml_dir, 'haarcascade_frontalcatface.xml'))
+    ]
 
     ret = []
     categories = []
@@ -73,6 +83,20 @@ def main():
                 categories.append(category_name)
             ret.append((np.asarray(cropped).transpose(2, 0, 1).astype(np.float32), np.array(label, np.int32)))
 
+            cropped = img.crop((xmin, ymin, xmax, ymax))
+            grayimg = cv2.cvtColor(np.asarray(cropped), cv2.COLOR_RGB2GRAY)
+            for d in detectors:
+                pos = d.detectMultiScale(grayimg)
+                if len(pos) != 0:
+                    pos = pos[0]
+                    left, top = pos[0], pos[1]
+                    size = min(pos[2], pos[3])
+                    cropped = cropped.crop((left, top, left+size, top+size))
+                    cropped = cropped.resize((64,64), Image.ANTIALIAS)
+                    ret.append((np.asarray(cropped).transpose(2, 0, 1).astype(np.float32), np.array(label, np.int32)))
+                    break
+
+    print(len(ret))
     np.save(Path(args.dst).joinpath('data.npy'), ret, allow_pickle=True)
 
 def load_dataset(image_dir, annotation_dir):

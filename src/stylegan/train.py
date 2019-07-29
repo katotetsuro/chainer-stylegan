@@ -220,7 +220,7 @@ class RunningHelper(object):
 
 
 def main():
-#    chainer.global_config.type_check = False
+    chainer.global_config.type_check = False
     chainer.global_config.autotune = True
     chainer.backends.cuda.set_max_workspace_size(512 * 1024 * 1024)
 
@@ -285,7 +285,7 @@ def main():
             if _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage:
                return True
             time = _trainer.elapsed_time
-            if time > 8.75 * 60 * 60:
+            if time > 8.5 * 60 * 60:
                 print('facing time-limit. elapsed time=:{}'.format(time))
                 return True
             return False
