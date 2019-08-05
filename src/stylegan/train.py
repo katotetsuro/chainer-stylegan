@@ -232,13 +232,13 @@ def main():
     running_helper.check_hps_consistency()
 
     # Setup Models
-    mapping = MappingNetwork(FLAGS.ch)
+    mapping = MappingNetwork(FLAGS.ch, FLAGS.mapping_ch)
     generator = StyleGenerator(FLAGS.ch, enable_blur=FLAGS.enable_blur)
     discriminator = Discriminator(ch=FLAGS.ch, enable_blur=FLAGS.enable_blur)
 
     if running_helper.keep_smoothed_gen:
         smoothed_generator = StyleGenerator(FLAGS.ch, enable_blur=FLAGS.enable_blur)
-        smoothed_mapping = MappingNetwork(FLAGS.ch)
+        smoothed_mapping = MappingNetwork(FLAGS.ch, FLAGS.mapping_ch)
 
     models = [mapping, generator, discriminator]
     model_names = ['Mapping', 'Generator', 'Discriminator']
@@ -285,7 +285,7 @@ def main():
             if _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage:
                return True
             time = _trainer.elapsed_time
-            if time > 8.5 * 60 * 60:
+            if time > 8.75 * 60 * 60:
                 print('facing time-limit. elapsed time=:{}'.format(time))
                 return True
             return False

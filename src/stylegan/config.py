@@ -23,6 +23,7 @@ parser.add_argument('--auto_resume', action='store_true', help='Whether to autom
 
 # algorithm & architecture
 parser.add_argument('--ch', type=int, default=512, help='#Channels')
+parser.add_argument('--mapping-ch', type=int, default=512, help='#Channels')
 parser.add_argument('--debug_start_instance', default=0, help='Change starting iteration for debugging.')
 
 

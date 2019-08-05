@@ -16,16 +16,17 @@ from common.networks.component.scale import Scale
 from common.networks.component.rescale import upscale2x, downscale2x, blur
 
 class MappingNetwork(chainer.Chain):
-    def __init__(self, ch=512):
+    def __init__(self, ch=512, in_ch=512):
         super().__init__()
+        self.in_ch = in_ch
         self.ch = ch
         with self.init_scope():
             self.l = chainer.ChainList(
-                EqualizedLinear(ch, ch),
+                EqualizedLinear(in_ch, in_ch),
                 LinkLeakyRelu(),
-                EqualizedLinear(ch, ch),
+                EqualizedLinear(in_ch, in_ch),
                 LinkLeakyRelu(),
-                EqualizedLinear(ch, ch),
+                EqualizedLinear(in_ch, ch),
                 LinkLeakyRelu(),
                 EqualizedLinear(ch, ch),
                 LinkLeakyRelu(),
@@ -43,10 +44,10 @@ class MappingNetwork(chainer.Chain):
     def make_hidden(self, batch_size):
         xp = self.xp
         if xp != np:
-            z = xp.random.normal(size=(batch_size, self.ch, 1, 1), dtype='f')
+            z = xp.random.normal(size=(batch_size, self.in_ch, 1, 1), dtype='f')
         else:
             # no "dtype" in kwargs for numpy.random.normal
-            z = xp.random.normal(size=(batch_size, self.ch, 1, 1)).astype('f')
+            z = xp.random.normal(size=(batch_size, self.in_ch, 1, 1)).astype('f')
         return z
 
     def __call__(self, x):
