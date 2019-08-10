@@ -54,7 +54,7 @@ def main():
         w_avg = xp.zeros(FLAGS.ch).astype('f')
         with chainer.using_config('train', False), chainer.using_config('enable_backprop', False):
             for i in tqdm.tqdm(range(n_batches)):
-                z = Variable(xp.asarray(mapping.make_hidden(w_batch_size)))
+                z = Variable(xp.asarray(mapping.make_hidden(w_batch_size)[0]))
                 w_cur = mapping(z)
                 w_avg = w_avg + xp.average(w_cur.data, axis=0)
         w_avg = w_avg / n_batches
@@ -66,7 +66,7 @@ def main():
     os.makedirs(FLAGS.out, exist_ok=True)
     with chainer.using_config('train', False), chainer.using_config('enable_backprop', False):
         for i in tqdm.tqdm(range(FLAGS.n)):
-            z = mapping.make_hidden(1)
+            z = mapping.make_hidden(1)[0]
             w = mapping(z).data
             if enable_trunction_trick:
                 delta = w - w_avg

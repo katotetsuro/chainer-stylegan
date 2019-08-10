@@ -64,7 +64,7 @@ def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, sub
         n_images = rows * cols
         xp = gen.xp
         if z is None:
-            z = Variable(xp.asarray(mapping.make_hidden(n_images)))
+            z = Variable(xp.asarray(mapping.make_hidden(n_images)[0]))
         else:
             z = z[:n_images]
         with chainer.using_config('train', False), chainer.using_config('enable_backprop', False):
@@ -93,7 +93,7 @@ def make_iterator_func(dataset, batch_size):
 def batch_generate_func(gen, mapping, trainer):
     def generate(n_images):
         xp = gen.xp
-        z = Variable(xp.asarray(mapping.make_hidden(n_images)))
+        z = Variable(xp.asarray(mapping.make_hidden(n_images)[0]))
         with chainer.using_config('train', False), chainer.using_config('enable_backprop', False):
             x = gen(mapping(z), stage=trainer.updater.stage)
         x = chainer.cuda.to_cpu(x.data)

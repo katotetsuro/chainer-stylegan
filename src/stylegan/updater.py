@@ -197,7 +197,8 @@ class Updater(chainer.training.Updater):
 
     def get_z_fake_data(self, batch_size):
         xp = self.map.xp
-        return xp.asarray(self.map.make_hidden(batch_size))
+        h, l = self.map.make_hidden(batch_size)
+        return xp.asarray(h), l
 
     def gen_cleargrads(self):
         if self.use_cleargrads:
@@ -234,8 +235,7 @@ class Updater(chainer.training.Updater):
         lr_scale = get_lr_scale_factor(self.total_gpu, stage)
 
         x_real_data, x_real_label = self.get_x_real_data(batch, batch_size)
-        z_fake_data = self.get_z_fake_data(batch_size)
-        l = xp.ones(len(z_fake_data)).astype(xp.int32) * -1
+        z_fake_data, z_fake_label = self.get_z_fake_data(batch_size)
 
         x_real = Variable(x_real_data)
         # Image.fromarray(convert_batch_images(x_real.data.get(), 4, 4)).save('no_downsized.png')
@@ -247,13 +247,16 @@ class Updater(chainer.training.Updater):
         w_fake = self.map(z_fake)
 
         if self.style_mixing_rate > 0 and np.random.rand() < self.style_mixing_rate:
-            z_fake2 = Variable(self.get_z_fake_data(batch_size))
+            z_fake2, _ = self.get_z_fake_data(batch_size)
+            z_fake2 = Variable(z_fake2)
             w_fake2 = self.map(z_fake2)
             x_fake = self.gen(w_fake, stage=stage, w2=w_fake2)
+            #z_fake_label.fill(-1)
         else:
             x_fake = self.gen(w_fake, stage=stage)
-        y_fake, _ = self.dis(x_fake, stage=stage)
+        y_fake, fake_pred_label = self.dis(x_fake, stage=stage)
         loss_gen = loss_func_dcgan_gen(y_fake) * lr_scale
+        loss_gen += F.softmax_cross_entropy(fake_pred_label, z_fake_label) * self.ac_weight
         if chainer.global_config.debug:
             g = c.build_computational_graph(loss_gen)
             with open('out_loss_gen', 'w') as o:
@@ -270,20 +273,20 @@ class Updater(chainer.training.Updater):
             soft_copy_param(self.smoothed_gen, self.gen, 1.0 - self.smoothing)
             soft_copy_param(self.smoothed_map, self.map, 1.0 - self.smoothing)
 
-        z_fake_data = self.get_z_fake_data(batch_size)
+        z_fake_data, z_fake_label = self.get_z_fake_data(batch_size)
         z_fake = Variable(z_fake_data)
 
         with chainer.using_config('enable_backprop', False):
             w_fake = self.map(z_fake)
             if self.style_mixing_rate > 0 and np.random.rand() < self.style_mixing_rate:
-                z_fake2 = Variable(self.get_z_fake_data(batch_size))
+                z_fake2 = Variable(self.get_z_fake_data(batch_size)[0])
                 w_fake2 = self.map(z_fake2)
                 x_fake = self.gen(w_fake, stage=stage, w2=w_fake2)
             else:
                 x_fake = self.gen(w_fake, stage=stage)
 
         x_fake.unchain_backward()
-        y_fake, _ = self.dis(x_fake, stage=stage)
+        y_fake, label_fake = self.dis(x_fake, stage=stage)
         y_real, label_real = self.dis(x_real, stage=stage)
         loss_adv = loss_func_dcgan_dis(y_fake, y_real)
         loss_adv += F.softmax_cross_entropy(label_real, x_real_label) * self.ac_weight

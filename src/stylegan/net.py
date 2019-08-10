@@ -16,12 +16,14 @@ from common.networks.component.scale import Scale
 from common.networks.component.rescale import upscale2x, downscale2x, blur
 
 class MappingNetwork(chainer.Chain):
-    def __init__(self, ch=512, in_ch=512):
+    def __init__(self, ch=512, in_ch=512, n_class=120):
         super().__init__()
         self.in_ch = in_ch
         self.ch = ch
+        self.n_class = n_class
         with self.init_scope():
             self.l = chainer.ChainList(
+                # todo equalize only numeric part?
                 EqualizedLinear(in_ch, in_ch),
                 LinkLeakyRelu(),
                 EqualizedLinear(in_ch, in_ch),
@@ -40,17 +42,27 @@ class MappingNetwork(chainer.Chain):
                 LinkLeakyRelu(),
             )
             self.ln = len(self.l)
+            self.embedding = L.EmbedID(n_class, in_ch)
 
     def make_hidden(self, batch_size):
         xp = self.xp
         if xp != np:
-            z = xp.random.normal(size=(batch_size, self.in_ch, 1, 1), dtype='f')
+            z = xp.random.normal(size=(batch_size, self.in_ch), dtype='f')
+            l = xp.random.randint(0, self.n_class, batch_size, np.int32)
+            z = xp.concatenate([z, l.reshape(-1, 1).astype(np.float32)], axis=1)
+            #one_hot = xp.identity(self.n_class, dtype=np.float32)[l][..., None, None]
+            #z = xp.concatenate([z, one_hot], axis=1)
         else:
             # no "dtype" in kwargs for numpy.random.normal
-            z = xp.random.normal(size=(batch_size, self.in_ch, 1, 1)).astype('f')
-        return z
+            z = xp.random.normal(size=(batch_size, self.in_ch)).astype('f')
+            l = xp.random.randint(0, self.n_class, batch_size, np.int32)
+            z = xp.concatenate([z, l.reshape(-1, 1).astype(np.float32)], axis=1)
+            #one_hot = xp.identity(self.n_class, dtype=np.float32)[l][..., None, None]
+            #z = xp.concatenate([z, one_hot], axis=1)
+        return z, l
 
     def __call__(self, x):
+        x = self.embedding.forward(F.cast(x[:, -1], 'int32')) * x[:, :-1]
         h = feature_vector_normalization(x)
         for i in range(self.ln):
             h = self.l[i](h)
@@ -255,15 +267,15 @@ class Generator(chainer.Chain):
             self.mapping = MappingNetwork(ch)
             self.gen = StyleGenerator(ch)
 
-    def make_hidden(self, batch_size):
-        xp = self.xp
-        if xp != np:
-            z = xp.random.normal(size=(batch_size, self.ch, 1, 1), dtype='f')
-        else:
-            # no "dtype" in kwargs for numpy.random.normal
-            z = xp.random.normal(size=(batch_size, self.ch, 1, 1)).astype('f')
-        z /= xp.sqrt(xp.sum(z * z, axis=1, keepdims=True) / self.ch + 1e-8)
-        return z
+    # def make_hidden(self, batch_size):
+    #     xp = self.xp
+    #     if xp != np:
+    #         z = xp.random.normal(size=(batch_size, self.ch, 1, 1), dtype='f')
+    #     else:
+    #         # no "dtype" in kwargs for numpy.random.normal
+    #         z = xp.random.normal(size=(batch_size, self.ch, 1, 1)).astype('f')
+    #     z /= xp.sqrt(xp.sum(z * z, axis=1, keepdims=True) / self.ch + 1e-8)
+    #     return z
 
     def __call__(self, z, stage):
         w = self.mapping(z)
@@ -370,7 +382,6 @@ class Discriminator(chainer.Chain):
         if stage % 2 == 0:
             k = (stage - 2) // 2
             h = F.leaky_relu(self.ins[k + 1](h))
-            y = F.average(h, axis=(2, 3), keepdims=False)
             for i in reversed(range(0, (k + 1) + 1)):  # k+1 .. 0
                 if i == 0:
                     class_prob = self.cls[k+1](h)
@@ -382,8 +393,7 @@ class Discriminator(chainer.Chain):
             h_1 = self.blocks[k + 1](F.leaky_relu(self.ins[k + 1](x)))
             assert 0. <= alpha < 1.
             h = (1.0 - alpha) * h_0 + alpha * h_1
-            y = F.average(h, axis=(2, 3), keepdims=False)
-
+            
             for i in reversed(range(0, k + 1)):  # k .. 0
                 if i == 0:
                     class_prob = self.cls[k](h)

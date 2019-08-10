@@ -12,7 +12,7 @@ def create_submit_data(mapping, gen, smooth):
     assert num_output % batchsize == 0
 
     for i in range(num_output // batchsize):
-        h = chainer.Variable(xp.asarray(mapping.make_hidden(batchsize)))
+        h = chainer.Variable(xp.asarray(mapping.make_hidden(batchsize)[0]))
         with chainer.using_config('train', False), chainer.using_config('enable_backprop', False):
             x = gen(mapping(h), stage=8)
             x = (x + 1) * 127.5
