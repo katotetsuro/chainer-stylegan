@@ -43,7 +43,7 @@ parser.add_argument('--image_dir', default='', help='Image directory containing 
 
 parser.add_argument('--snapshot_interval', type=int, default=30000, help='Interval of snapshot')
 parser.add_argument('--evaluation_sample_interval', type=int, default=20000, help='Interval of evaluation sampling')
-parser.add_argument('--display_interval', default=100, help='Interval of displaying log to console')
+parser.add_argument('--display_interval', type=int, default=100, help='Interval of displaying log to console')
 parser.add_argument('--get_model_from_interation', default='', help='Load this iteration (it is a string)')
 parser.add_argument('--lr_scales', default='', type=str)
 parser.add_argument('--ac', default=0.05, type=float)

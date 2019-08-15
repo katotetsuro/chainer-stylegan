@@ -4,11 +4,16 @@ import os
 from pathlib import Path
 from typing import Dict
 
+# for kaggle team
+# this is base64-encoded source code.
+# code will be decoded and install at the beginning of kernel run.
+# you can see all code at https://github.com/katotetsuro/chainer-stylegan/tree/ac
+
 
 # this is base64 encoded source code
 file_data: Dict = {file_data}
 
-
+# decode to local storage
 for path, encoded in file_data.items():
     print(path)
     path = Path('/home').joinpath(path)

@@ -39,6 +39,19 @@ from .config import FLAGS
 from common.utils.save_images import convert_batch_images
 from common.evaluation.fid import API as FIDAPI, fid_extension
 from .submit import create_submit_data
+from dataset.trim_images import load_dataset
+
+class Transform():
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, in_data):
+        x, t = in_data
+        t = t.astype(np.int32)
+        x = chainercv.transforms.resize(x, (self.size, self.size))
+        x = chainercv.transforms.random_flip(x, False, True)
+        x = x / 127.5 - 1
+        return x, t
 
 def sample_generate_light(gen, mapping, dst, rows=8, cols=8, z=None, seed=0, subdir='preview'):
     @chainer.training.make_extension()
@@ -219,202 +232,47 @@ class RunningHelper(object):
 
 
 def main():
-    chainer.global_config.type_check = False
+    # chainer.global_config.type_check = False
     chainer.global_config.autotune = True
     chainer.backends.cuda.set_max_workspace_size(512 * 1024 * 1024)
 
     print(FLAGS)
-    running_helper = RunningHelper(FLAGS.use_mpi)
-    global mpi_is_master
-    mpi_is_master = running_helper.is_master 
-    # Check stage / image size / dynamic batch size / data consistency.
-    running_helper.check_hps_consistency()
 
     # Setup Models
-    mapping = MappingNetwork(FLAGS.ch, FLAGS.mapping_ch)
-    generator = StyleGenerator(FLAGS.ch, enable_blur=FLAGS.enable_blur)
     discriminator = Discriminator(ch=FLAGS.ch, enable_blur=FLAGS.enable_blur)
+    if FLAGS.gpu > -1:
+        chainer.cuda.get_device_from_id(FLAG.gpu).use()
+        discriminator.to_gpu()
 
-    if running_helper.keep_smoothed_gen:
-        smoothed_generator = StyleGenerator(FLAGS.ch, enable_blur=FLAGS.enable_blur)
-        smoothed_mapping = MappingNetwork(FLAGS.ch, FLAGS.mapping_ch)
-
-    models = [mapping, generator, discriminator]
-    model_names = ['Mapping', 'Generator', 'Discriminator']
-    if running_helper.keep_smoothed_gen:
-        models.append(smoothed_generator)
-        models.append(smoothed_mapping)
-        model_names.append('SmoothedGenerator')
-        model_names.append('SmoothedMapping')
-
-    if running_helper.device > -1:
-        chainer.cuda.get_device_from_id(running_helper.device).use()
-        for model in models:
-            model.to_gpu()
-
-    stage_manager = StageManager(
-        stage_interval=running_helper.stage_interval,
-        dynamic_batch_size=running_helper.dynamic_batch_size,
-        make_dataset_func=running_helper.make_dataset if not FLAGS.image_dir else lambda s: running_helper.make_image_dataset(s, FLAGS.image_dir),
-        make_iterator_func=make_iterator_func,
-        debug_start_instance=FLAGS.debug_start_instance)
-    
-    #if running_helper.is_master:
-    #    chainer.global_config.debug = True
-
-    updater_args = {
-        "models": models,
-        "optimizer": {
-            "map":  running_helper.make_optimizer(mapping, FLAGS.adam_alpha_g / 100, FLAGS.adam_beta1, FLAGS.adam_beta2), 
-            "gen": running_helper.make_optimizer(generator, FLAGS.adam_alpha_g, FLAGS.adam_beta1, FLAGS.adam_beta2),
-            "dis": running_helper.make_optimizer(discriminator, FLAGS.adam_alpha_d, FLAGS.adam_beta1, FLAGS.adam_beta2)
-        },
-        'stage_manager': stage_manager,
-        'lambda_gp': FLAGS.lambda_gp,
-        'smoothing': FLAGS.smoothing,
-        'style_mixing_rate': FLAGS.style_mixing_rate,
-        'use_cleargrads': running_helper.use_cleargrads,
-        'total_gpu': running_helper.fleet_size,
-        'ac_weight': FLAGS.ac
-    }
-    updater = Updater(**updater_args)
-
+    _dataset = np.load(FLAGS.image_dir, allow_pickle=True)
+    _dataset = chainer.datasets.TransformDataset(_dataset, Transform(64))
+    optimizer = chainer.optimizers.Adam(alpha=args.adam_alpha_d)
+    chainer.training.updater.StandardUpdater(tain_iter, optimizer)
     class TimeupTrigger():
         def __call__(self, _trainer):
-            if _trainer.updater.stage_manager.stage_int >= FLAGS.max_stage:
-               return True
             time = _trainer.elapsed_time
-            if time > 8.9 * 60 * 60:
+            if time > 8.75 * 60 * 60:
                 print('facing time-limit. elapsed time=:{}'.format(time))
                 return True
             return False
     trainer = training.Trainer(
         updater, TimeupTrigger(), out=FLAGS.out)
 
-    # Set up extensions
-    if running_helper.is_master:
-        for model, model_name in zip(models, model_names):
-            trainer.extend(
-                extensions.snapshot_object(model, model_name + '_{.updater.iteration}.npz'),
-                trigger=(FLAGS.snapshot_interval, 'iteration'))
+    classifier = chainer.links.Classifier(discriminator)
 
-        trainer.extend(
-            extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'),
-            trigger=(FLAGS.snapshot_interval, 'iteration'))
+    trainer.extend(
+        extensions.snapshot_object(discriminator, 'discriminator' + '_{.updater.iteration}.npz'),
+        trigger=(FLAGS.snapshot_interval, 'iteration'))
 
-        trainer.extend(
-            extensions.ProgressBar(training_length=(updater.total_iteration, 'iteration'), update_interval=FLAGS.display_interval))
+    trainer.extend(
+        extensions.ProgressBar(training_length=(updater.total_iteration, 'iteration'), update_interval=FLAGS.display_interval))
 
-        trainer.extend(
-            sample_generate_light(generator, mapping, FLAGS.out, rows=8, cols=8),
-            trigger=(FLAGS.evaluation_sample_interval, 'iteration'),
-            priority=extension.PRIORITY_WRITER)
-
-        if running_helper.keep_smoothed_gen:
-            trainer.extend(
-                sample_generate_light(smoothed_generator, smoothed_mapping, FLAGS.out, rows=8, cols=8, subdir='preview_smoothed'),
-                trigger=(FLAGS.evaluation_sample_interval, 'iteration'),
-                priority=extension.PRIORITY_WRITER)
-        report_keys = [
-            'iteration', 'elapsed_time', 'stage', 'batch_size', 'image_size', 'gen/loss_adv', 'dis/loss_adv',
-            'dis/loss_gp'
-        ]
-        if FLAGS.fid_interval > 0:
-            report_keys += 'FID'
-            fidapi = FIDAPI(FLAGS.fid_clfs_type,
-                            FLAGS.fid_clfs_path,
-                            gpu=running_helper.device,
-                            load_real_stat=FLAGS.fid_real_stat)
-            trainer.extend(
-                fid_extension(fidapi,
-                                batch_generate_func(generator, mapping, trainer),
-                                seed=FLAGS.seed,
-                                report_key='FID'
-                            ),
-                trigger=(FLAGS.fid_interval, 'iteration')
-            )
-            if running_helper.keep_smoothed_gen:
-                report_keys += 'S_FID'
-                trainer.extend(
-                    fid_extension(fidapi,
-                                    batch_generate_func(smoothed_generator, smoothed_mapping, trainer),
-                                    seed=FLAGS.seed,
-                                    report_key='S_FID'
-                                ),
-                    trigger=(FLAGS.fid_interval, 'iteration')
-                )
-
-        trainer.extend(extensions.LogReport(keys=report_keys, trigger=(FLAGS.display_interval, 'iteration')))
-        trainer.extend(extensions.PrintReport(report_keys), trigger=(FLAGS.display_interval, 'iteration'))
-
-    # Recover if possible
-    if FLAGS.get_model_from_interation != '':
-        resume_iteration_str = FLAGS.get_model_from_interation
-        print('Resume from {}'.format(resume_iteration_str))
-        for model, model_name in zip(models, model_names):
-            chainer.serializers.load_npz(
-                FLAGS.out + '/' + model_name + '_%s.npz' % resume_iteration_str,
-                model,)
-        chainer.serializers.load_npz(
-            FLAGS.out + '/' + 'snapshot_iter_%s.npz' % resume_iteration_str,
-            trainer,)
-
-    elif FLAGS.auto_resume:
-        print("Auto Resume")
-        candidates = []
-        auto_resume_dir = FLAGS.auto_resume_dir if  FLAGS.auto_resume_dir != '' else FLAGS.out
-        for fname in [f for f in os.listdir(auto_resume_dir) if f.startswith('Generator_') and f.endswith('.npz')]:
-            fname = re.sub(r'^Generator_', '', fname)
-            fname = re.sub('\.npz$', '', fname)
-            fname_int = None
-            try:
-                fname_int = int(fname)
-            except ValueError:
-                pass
-            if fname_int is not None:
-                all_model_exist = True 
-                for m in model_names:
-                    if not os.path.exists(auto_resume_dir + '/' + m + '_' + fname + '.npz'):
-                        all_model_exist = False
-
-                if not os.path.exists(auto_resume_dir + '/' + ('snapshot_iter_%s.npz' % fname)):
-                    all_model_exist = False
-
-                if all_model_exist:
-                    candidates.append(fname)
-
-        #print(candidates)
-        candidates.sort(key=lambda _: int(_), reverse=True)
-        if len(candidates) > 0:
-            resume_iteration_str = candidates[0]
-        else:
-            resume_iteration_str = None
-        if resume_iteration_str is not None:
-            print('Automatic resuming: use iteration %s' % resume_iteration_str)
-            for model, model_name in zip(models, model_names):
-                chainer.serializers.load_npz(
-                    auto_resume_dir + '/' + model_name + '_%s.npz' % resume_iteration_str,
-                model,)
-            chainer.serializers.load_npz(
-                auto_resume_dir + '/' + 'snapshot_iter_%s.npz' % resume_iteration_str,
-            trainer,)
-
-    # Run the training
-    if FLAGS.enable_cuda_profiling:
-        with chainer.backends.cuda.cupy.cuda.profile():
-            trainer.run()
-    else:
-        #with chainer.using_config('debug', True):
-        trainer.run()
-
-    for model, model_name in zip(models, model_names):
-        chainer.serializers.save_npz(FLAGS.out + '/' + model_name + '_latest.npz', model)
-
-    print('training finished. generating submit images...')
-    create_submit_data(mapping, generator, False)
-    if FLAGS.keep_smoothed_gen:
-        print('saving smoothed result')
-        create_submit_data(smoothed_mapping, smoothed_generator, True)
+        
+    report_keys = ['epoch', 'main/loss', 'validation/main/loss',
+    'main/accuracy', 'validation/main/accuracy']
+    trainer.extend(extensions.LogReport(keys=report_keys, trigger=(FLAGS.display_interval, 'iteration')))
+    trainer.extend(extensions.PrintReport(report_keys), trigger=(FLAGS.display_interval, 'iteration'))
+    trainer.run()
 
 import pdb, traceback, sys, code 
 
